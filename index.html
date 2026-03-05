@@ -7,21 +7,19 @@
     content="width=device-width, initial-scale=1, shrink-to-fit=no"
   />
   <title>Saul’s Dad Joke Countdown</title>
-  data:,
-  <meta name="description" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
+  <link rel="icon" hrefdescription" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
   <style>
     :root {
-      --bg: #0f172a;         /* slate-900 */
-      --card: #111827;       /* gray-900 */
-      --text: #e5e7eb;       /* gray-200 */
-      --muted: #9ca3af;      /* gray-400 */
-      --accent: #22d3ee;     /* cyan-400 */
-      --accent-contrast: #063d42;
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
       --ring: rgba(34, 211, 238, 0.35);
+      --success: #34d399;
+      --danger: #fb7185;
     }
-
     * { box-sizing: border-box; }
-
     html, body {
       height: 100%;
       margin: 0;
@@ -29,7 +27,6 @@
       background: radial-gradient(1200px 600px at 20% 0%, #0b1224 0%, var(--bg) 40%, #0a1020 100%);
       color: var(--text);
     }
-
     .container {
       min-height: 100%;
       max-width: 900px;
@@ -39,22 +36,9 @@
       grid-template-rows: auto 1fr auto;
       gap: 2rem;
     }
-
-    header {
-      text-align: center;
-      margin-top: 1rem;
-    }
-
-    h1 {
-      margin: 0 0 0.25rem 0;
-      font-size: clamp(1.6rem, 3vw, 2.2rem);
-      letter-spacing: 0.2px;
-    }
-
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-    }
+    header { text-align: center; margin-top: 1rem; }
+    h1 { margin: 0 0 0.25rem 0; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: 0.2px; }
+    .subtitle { margin: 0; color: var(--muted); }
 
     .countdown-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
@@ -64,86 +48,44 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
       backdrop-filter: blur(8px);
     }
-
-    .next-time {
-      display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
-      color: var(--muted);
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
+    .status-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border-radius: 999px; padding: 0.35rem 0.7rem; font-weight: 700; font-size: 0.9rem;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06);
     }
+    .badge.next { color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,0.15) inset; }
+    .badge.live { color: var(--success); box-shadow: 0 0 0 2px rgba(52,211,153,0.15) inset; }
+    .badge.warn { color: var(--danger); box-shadow: 0 0 0 2px rgba(251,113,133,0.15) inset; }
 
+    .next-time { display: flex; align-items: baseline; gap: 0.5rem; color: var(--muted); flex-wrap: wrap; }
     .next-time strong { color: var(--text); }
 
-    .countdown {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-      margin: 1rem 0 1.25rem;
-    }
-
+    .countdown { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1rem 0 1.25rem; }
     .time-segment {
-      background: var(--card);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 1rem;
-      text-align: center;
-      position: relative;
+      background: var(--card); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 1rem; text-align: center; position: relative;
       box-shadow: 0 8px 18px rgba(0,0,0,0.35);
     }
-
     .value {
-      font-weight: 800;
-      font-feature-settings: "tnum" 1;
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(1.8rem, 4.5vw, 3rem);
-      line-height: 1.1;
-      color: var(--accent);
+      font-weight: 800; font-feature-settings: "tnum" 1; font-variant-numeric: tabular-nums;
+      font-size: clamp(1.8rem, 4.5vw, 3rem); line-height: 1.1; color: var(--accent);
       text-shadow: 0 0 18px rgba(34,211,238,0.25);
     }
+    .label { text-transform: uppercase; letter-spacing: 1px; margin-top: 0.35rem; color: var(--muted); font-size: 0.75rem; }
 
-    .label {
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 0.35rem;
-      color: var(--muted);
-      font-size: 0.75rem;
-    }
-
-    .actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
-    }
-
+    .actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; }
     button.primary {
-      appearance: none;
-      border: 1px solid rgba(255,255,255,0.12);
-      color: var(--bg);
+      appearance: none; border: 1px solid rgba(255,255,255,0.12); color: #0f172a;
       background: linear-gradient(180deg, var(--accent), #11b7d0);
-      font-weight: 700;
-      border-radius: 12px;
-      padding: 0.65rem 1rem;
-      cursor: pointer;
-      box-shadow: 0 8px 20px var(--ring);
-      transition: transform 0.05s ease-in-out, filter 0.15s ease;
+      font-weight: 700; border-radius: 12px; padding: 0.65rem 1rem; cursor: pointer;
+      box-shadow: 0 8px 20px var(--ring); transition: transform 0.05s ease-in-out, filter 0.15s ease;
     }
-
     button.primary:hover { filter: brightness(1.05); }
     button.primary:active { transform: translateY(1px) scale(0.995); }
-
     .status { color: var(--muted); font-size: 0.95rem; }
-
     .tz-note { margin-top: 0.5rem; color: var(--muted); }
-
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
+    footer { text-align: center; color: var(--muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -154,9 +96,12 @@
     </header>
 
     <section class="countdown-card">
-      <div class="next-time">
-        <span>Next joke time:</span>
-        <strong id="nextTargetText">—</strong>
+      <div class="status-row">
+        <span id="stateBadge" class="badge next">Next Release</span>
+        <div class="next-time">
+          <span id="nextLabel">Next joke time:</span>
+          <strong id="nextTargetText">—</strong>
+        </div>
       </div>
 
       <div class="countdown" aria-live="polite" aria-atomic="true">
@@ -201,10 +146,11 @@
   <script>
     // === Configuration ===
     const CENTRAL_TZ = 'America/Chicago';
-    const TARGET_WEEKDAY = 5; // Friday (0=Sun, 5=Fri)
-    const TARGET_HOUR = 15;   // 15:30 central time
+    const TARGET_WEEKDAY = 5; // Friday (0=Sun ... 6=Sat)
+    const TARGET_HOUR = 15;   // 15:30 Central
     const TARGET_MIN = 30;
-    const NOTIFY_MINUTES_BEFORE = 1; // minutes before joke time to notify
+    const NOTIFY_MINUTES_BEFORE = 1;
+    const LIVE_WINDOW_MS = 15_000;
 
     // DOM
     const el = {
@@ -213,12 +159,13 @@
       minutes: document.getElementById('minutes'),
       seconds: document.getElementById('seconds'),
       nextText: document.getElementById('nextTargetText'),
+      nextLabel: document.getElementById('nextLabel'),
+      stateBadge: document.getElementById('stateBadge'),
       notifyBtn: document.getElementById('notifyBtn'),
       notifyStatus: document.getElementById('notifyStatus'),
     };
 
-    // ----- Time zone helpers -----
-    // Convert a Date to its parts in a given IANA time zone using Intl without parsing strings.
+    // ---- Time zone helpers (no UTC-midnight pitfalls) ----
     function zonedParts(date, timeZone) {
       const fmt = new Intl.DateTimeFormat('en-US', {
         timeZone,
@@ -231,90 +178,108 @@
         return acc;
       }, {});
       return {
-        year: +parts.year,
-        month: +parts.month,
-        day: +parts.day,
-        hour: +parts.hour,
-        minute: +parts.minute,
-        second: +parts.second
+        year: +parts.year, month: +parts.month, day: +parts.day,
+        hour: +parts.hour, minute: +parts.minute, second: +parts.second
       };
     }
 
-    // Build a Date representing Y-M-D H:M:S in a given time zone by searching for the UTC instant whose
-    // zoned parts match the desired components. Handles DST transitions.
-    function makeDateInZone({year, month, day, hour = 0, minute = 0, second = 0}, timeZone) {
-      const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    // Return 0..6 (Sun..Sat) for a UTC instant as seen in the given zone
+    function weekdayInZone(date, timeZone) {
+      const wstr = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date);
+      const map = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+      // If some browsers/locales return full names, trim to 3 chars
+      const key = (wstr.length > 3 ? wstr.slice(0,3) : wstr);
+      return map[key] ?? 0;
+    }
 
+    // Produce a UTC Date whose wall time in 'timeZone' matches the given Y-M-D H:M:S
+    function makeDateInZone({year, month, day, hour=0, minute=0, second=0}, timeZone) {
+      // Start with a reasonable guess (treat components as if they were UTC)
+      let guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+      // If already matches, return
       const parts = zonedParts(guess, timeZone);
       if (parts.year === year && parts.month === month && parts.day === day &&
           parts.hour === hour && parts.minute === minute && parts.second === second) {
         return guess;
       }
-
-      // Binary search +/- 36h to find matching local wall time.
-      let low = guess.getTime() - 36 * 3600_000;
-      let high = guess.getTime() + 36 * 3600_000;
-      for (let i = 0; i < 32; i++) {
+      // Binary search around the guess to land on the exact wall time (handles DST jumps)
+      let low = guess.getTime() - 48 * 3600_000;
+      let high = guess.getTime() + 48 * 3600_000;
+      const want = [year, month, day, hour, minute, second].join(',');
+      for (let i=0;i<40;i++){
         const mid = new Date((low + high) / 2);
         const p = zonedParts(mid, timeZone);
-        const keyMid = [p.year, p.month, p.day, p.hour, p.minute, p.second].join(',');
-        const keyWant = [year, month, day, hour, minute, second].join(',');
-        if (keyMid < keyWant) {
-          low = mid.getTime() + 500;
-        } else if (keyMid > keyWant) {
-          high = mid.getTime() - 500;
-        } else {
-          return mid;
-        }
+        const key = [p.year, p.month, p.day, p.hour, p.minute, p.second].join(',');
+        if (key < want) low = mid.getTime() + 250;
+        else if (key > want) high = mid.getTime() - 250;
+        else return mid;
       }
-      return guess; // fallback
+      return guess;
     }
 
-    // Returns Date for NEXT Friday 3:30 PM CENTRAL (America/Chicago).
+    // Fixed: compute next Friday 15:30 *entirely in Central wall time*
     function nextCentralFriday1530() {
       const now = new Date();
-      const nowCentral = zonedParts(now, CENTRAL_TZ);
+      const nowParts = zonedParts(now, CENTRAL_TZ);
+      const w = weekdayInZone(now, CENTRAL_TZ);
 
-      const weekdayCentral = new Intl.DateTimeFormat('en-US', { timeZone: CENTRAL_TZ, weekday: 'short' })
-        .formatToParts(now)
-        .find(p => p.type === 'weekday').value;
-      const weekdayIndexMap = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
-      const w = weekdayIndexMap[weekdayCentral];
-
-      let addDays = (TARGET_WEEKDAY - w + 7) % 7;
-      if (addDays === 0) {
-        if (nowCentral.hour > TARGET_HOUR ||
-          (nowCentral.hour === TARGET_HOUR && nowCentral.minute >= TARGET_MIN)) {
-          addDays = 7;
-        }
-      }
-
-      // Build base day in Central, then set target time.
-      const baseDate = new Date(Date.UTC(nowCentral.year, nowCentral.month - 1, nowCentral.day));
-      const targetBase = new Date(baseDate.getTime() + addDays * 86400_000);
-      const targetCentralParts = zonedParts(targetBase, CENTRAL_TZ);
-      const target = makeDateInZone({
-        year: targetCentralParts.year,
-        month: targetCentralParts.month,
-        day: targetCentralParts.day,
-        hour: TARGET_HOUR,
-        minute: TARGET_MIN,
-        second: 0
+      // Central "today" at 00:00 as a UTC instant
+      const todayCentralMidnight = makeDateInZone({
+        year: nowParts.year, month: nowParts.month, day: nowParts.day,
+        hour: 0, minute: 0, second: 0
       }, CENTRAL_TZ);
 
-      return target;
+      // Days to this week's (or next week's) Friday
+      let addDays = (TARGET_WEEKDAY - w + 7) % 7;
+
+      // Candidate Friday at 15:30 Central (this week or same day if earlier than 15:30)
+      const candidateDayUTC = new Date(todayCentralMidnight.getTime() + addDays * 86400_000);
+      const candDayParts = zonedParts(candidateDayUTC, CENTRAL_TZ);
+      let candidate = makeDateInZone({
+        year: candDayParts.year, month: candDayParts.month, day: candDayParts.day,
+        hour: TARGET_HOUR, minute: TARGET_MIN, second: 0
+      }, CENTRAL_TZ);
+
+      // If it's already past 15:30 Central on that Friday, move to next week
+      if (candidate.getTime() <= now.getTime()) {
+        const nextWeekUTC = new Date(candidateDayUTC.getTime() + 7 * 86400_000);
+        const nextParts = zonedParts(nextWeekUTC, CENTRAL_TZ);
+        candidate = makeDateInZone({
+          year: nextParts.year, month: nextParts.month, day: nextParts.day,
+          hour: TARGET_HOUR, minute: TARGET_MIN, second: 0
+        }, CENTRAL_TZ);
+      }
+
+      return candidate;
     }
 
-    // Format for local display
     function formatLocal(dt) {
       return new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short' }).format(dt);
     }
 
-    // ----- Countdown logic -----
+    // ---- Countdown logic ----
     let target = nextCentralFriday1530();
     let tickTimer = null;
+    let liveClearTimer = null;
     let notifyTimerAt = null;
     let notifyTimerBefore = null;
+
+    function setBadge(mode) {
+      el.stateBadge.classList.remove('next', 'live', 'warn');
+      if (mode === 'live') {
+        el.stateBadge.textContent = 'Dad Joke Release is LIVE!';
+        el.stateBadge.classList.add('live');
+        el.nextLabel.textContent = 'Happening now:';
+      } else if (mode === 'warn') {
+        el.stateBadge.textContent = 'Almost time';
+        el.stateBadge.classList.add('warn');
+        el.nextLabel.textContent = 'Next joke time:';
+      } else {
+        el.stateBadge.textContent = 'Next Release';
+        el.stateBadge.classList.add('next');
+        el.nextLabel.textContent = 'Next joke time:';
+      }
+    }
 
     function updateNextTargetText() {
       const localText = formatLocal(target);
@@ -326,9 +291,8 @@
 
     function startTicking() {
       stopTicking();
-      tickTimer = setInterval(tick, 250);
+      tickTimer = setInterval(tick, 1000); // 1s is enough
     }
-
     function stopTicking() {
       if (tickTimer) clearInterval(tickTimer);
       tickTimer = null;
@@ -338,14 +302,29 @@
       const now = new Date();
       const diff = target.getTime() - now.getTime();
 
+      if (diff <= 0 && diff > -LIVE_WINDOW_MS) setBadge('live');
+      else if (diff > 0 && diff <= 5 * 60_000) setBadge('warn');
+      else if (diff > 0) setBadge('next');
+
       if (diff <= 0) {
         maybeNotify("It's Dad Joke Time! 🤣", {
           body: "Saul’s legendary dad joke is dropping now.",
           tag: 'saul-dad-joke-now'
         });
-        target = nextCentralFriday1530();
-        updateNextTargetText();
-        scheduleNotifications();
+
+        if (!liveClearTimer) {
+          liveClearTimer = setTimeout(() => {
+            liveClearTimer = null;
+            target = nextCentralFriday1530();
+            updateNextTargetText();
+            scheduleNotifications();
+          }, Math.max(2500, LIVE_WINDOW_MS));
+        }
+
+        el.days.textContent = '0';
+        el.hours.textContent = '00';
+        el.minutes.textContent = '00';
+        el.seconds.textContent = '00';
         return;
       }
 
@@ -361,8 +340,7 @@
       el.seconds.textContent = String(seconds).padStart(2, '0');
     }
 
-    // ----- Notifications & SW -----
-    // Create a minimal Service Worker from an in-memory Blob so we can keep this single-file.
+    // ---- Notifications + inline SW (still static) ----
     async function registerInlineSW() {
       if (!('serviceWorker' in navigator)) return;
       const swCode = `
@@ -371,43 +349,29 @@
         self.addEventListener('notificationclick', (event) => {
           event.notification.close();
           event.waitUntil((async () => {
-            const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-            if (allClients.length > 0) {
-              const client = allClients[0];
-              client.focus();
-            } else {
-              await self.clients.openWindow('./');
-            }
+            const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+            if (clients.length) clients[0].focus();
+            else await self.clients.openWindow('./');
           })());
         });
       `;
       const blob = new Blob([swCode], { type: 'text/javascript' });
       const url = URL.createObjectURL(blob);
-      try {
-        await navigator.serviceWorker.register(url);
-      } catch (e) {
-        console.warn('Service Worker registration failed:', e);
-      } finally {
-        // Revoke after some time; the browser keeps a copy.
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      }
+      try { await navigator.serviceWorker.register(url); }
+      catch (e) { console.warn('SW registration failed:', e); }
+      finally { setTimeout(() => URL.revokeObjectURL(url), 10_000); }
     }
 
     function updateNotifyStatus() {
       let status = 'Notifications: ';
-      if (!('Notification' in window)) {
-        status += 'not supported in this browser.';
-      } else {
-        status += Notification.permission;
-      }
+      if (!('Notification' in window)) status += 'not supported in this browser.';
+      else status += Notification.permission;
       el.notifyStatus.textContent = status;
     }
 
     async function requestNotifications() {
       if (!('Notification' in window)) return;
-      if (Notification.permission === 'granted') {
-        // already granted
-      } else if (Notification.permission !== 'denied') {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
         await Notification.requestPermission();
       }
       updateNotifyStatus();
@@ -416,7 +380,6 @@
 
     function maybeNotify(title, options = {}) {
       if (!('Notification' in window)) return;
-
       const show = () => {
         if (navigator.serviceWorker?.ready) {
           navigator.serviceWorker.ready.then(reg => {
@@ -424,22 +387,16 @@
               icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="8" y="44" font-size="40">😂</text></svg>',
               ...options
             }).catch(() => {
-              if (Notification.permission === 'granted') {
-                new Notification(title, options);
-              }
+              if (Notification.permission === 'granted') new Notification(title, options);
             });
           });
         } else if (Notification.permission === 'granted') {
           new Notification(title, options);
         }
       };
-
-      if (Notification.permission === 'granted') {
-        show();
-      }
+      if (Notification.permission === 'granted') show();
     }
 
-    // Schedule notifications while the tab is open.
     function scheduleNotifications() {
       if (notifyTimerAt) { clearTimeout(notifyTimerAt); notifyTimerAt = null; }
       if (notifyTimerBefore) { clearTimeout(notifyTimerBefore); notifyTimerBefore = null; }
@@ -447,10 +404,9 @@
       const now = Date.now();
       const msUntil = target.getTime() - now;
       const msBefore = msUntil - NOTIFY_MINUTES_BEFORE * 60_000;
+      const MAX_DELAY = 2 ** 31 - 1;
 
       if ('Notification' in window && Notification.permission === 'granted') {
-        // Only schedule if the delay fits in setTimeout’s 32-bit window
-        const MAX_DELAY = 2 ** 31 - 1;
         if (msBefore > 0 && msBefore < MAX_DELAY) {
           notifyTimerBefore = setTimeout(() => {
             maybeNotify('Almost Dad Joke time ⏰', {
@@ -470,17 +426,18 @@
       }
     }
 
-    // ----- Init -----
+    // ---- Init ----
     (async function init() {
-      await registerInlineSW();                 // Inline SW for single-file build
+      await registerInlineSW();
       updateNotifyStatus();
       el.notifyBtn.addEventListener('click', requestNotifications);
 
+      // Initial render & timers
       updateNextTargetText();
       startTicking();
       scheduleNotifications();
 
-      // Recompute the target hourly to be robust across DST boundaries.
+      // Recompute target hourly (robust over DST boundaries).
       setInterval(() => {
         const newTarget = nextCentralFriday1530();
         if (newTarget.getTime() !== target.getTime()) {
