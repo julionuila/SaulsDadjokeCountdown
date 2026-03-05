@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, shrink-to-fit=no"
+  />
+  <title>Saul’s Dad Joke Countdown</title>
+  data:,
+  <meta name="description" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
+  <style>
+    :root {
+      --bg: #0f172a;         /* slate-900 */
+      --card: #111827;       /* gray-900 */
+      --text: #e5e7eb;       /* gray-200 */
+      --muted: #9ca3af;      /* gray-400 */
+      --accent: #22d3ee;     /* cyan-400 */
+      --accent-contrast: #063d42;
+      --ring: rgba(34, 211, 238, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% 0%, #0b1224 0%, var(--bg) 40%, #0a1020 100%);
+      color: var(--text);
+    }
+
+    .container {
+      min-height: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    h1 {
+      margin: 0 0 0.25rem 0;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .countdown-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+    }
+
+    .next-time {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .next-time strong { color: var(--text); }
+
+    .countdown {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin: 1rem 0 1.25rem;
+    }
+
+    .time-segment {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    }
+
+    .value {
+      font-weight: 800;
+      font-feature-settings: "tnum" 1;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.8rem, 4.5vw, 3rem);
+      line-height: 1.1;
+      color: var(--accent);
+      text-shadow: 0 0 18px rgba(34,211,238,0.25);
+    }
+
+    .label {
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    button.primary {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--bg);
+      background: linear-gradient(180deg, var(--accent), #11b7d0);
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      box-shadow: 0 8px 20px var(--ring);
+      transition: transform 0.05s ease-in-out, filter 0.15s ease;
+    }
+
+    button.primary:hover { filter: brightness(1.05); }
+    button.primary:active { transform: translateY(1px) scale(0.995); }
+
+    .status { color: var(--muted); font-size: 0.95rem; }
+
+    .tz-note { margin-top: 0.5rem; color: var(--muted); }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Saul’s Dad Joke Countdown</h1>
+      <p class="subtitle">Every Friday at <strong>3:30 PM</strong> Central (America/Chicago)</p>
+    </header>
+
+    <section class="countdown-card">
+      <div class="next-time">
+        <span>Next joke time:</span>
+        <strong id="nextTargetText">—</strong>
+      </div>
+
+      <div class="countdown" aria-live="polite" aria-atomic="true">
+        <div class="time-segment">
+          <div class="value" id="days">—</div>
+          <div class="label">Days</div>
+        </div>
+        <div class="time-segment">
+          <div class="value" id="hours">—</div>
+          <div class="label">Hours</div>
+        </div>
+        <div class="time-segment">
+          <div class="value" id="minutes">—</div>
+          <div class="label">Minutes</div>
+        </div>
+        <div class="time-segment">
+          <div class="value" id="seconds">—</div>
+          <div class="label">Seconds</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="notifyBtn" class="primary">Enable Notifications</button>
+        <span id="notifyStatus" class="status"></span>
+      </div>
+
+      <details class="tz-note">
+        <summary>Time Zone Details</summary>
+        <p>
+          The countdown is anchored to <strong>America/Chicago</strong> (Central Time),
+          automatically handling Daylight Saving Time. Times shown here are displayed in your local time,
+          but the target is always Friday 3:30 PM Central.
+        </p>
+      </details>
+    </section>
+
+    <footer>
+      <p>Made for Saul’s legendary dad jokes. 🤓</p>
+    </footer>
+  </main>
+
+  <script>
+    // === Configuration ===
+    const CENTRAL_TZ = 'America/Chicago';
+    const TARGET_WEEKDAY = 5; // Friday (0=Sun, 5=Fri)
+    const TARGET_HOUR = 15;   // 15:30 central time
+    const TARGET_MIN = 30;
+    const NOTIFY_MINUTES_BEFORE = 1; // minutes before joke time to notify
+
+    // DOM
+    const el = {
+      days: document.getElementById('days'),
+      hours: document.getElementById('hours'),
+      minutes: document.getElementById('minutes'),
+      seconds: document.getElementById('seconds'),
+      nextText: document.getElementById('nextTargetText'),
+      notifyBtn: document.getElementById('notifyBtn'),
+      notifyStatus: document.getElementById('notifyStatus'),
+    };
+
+    // ----- Time zone helpers -----
+    // Convert a Date to its parts in a given IANA time zone using Intl without parsing strings.
+    function zonedParts(date, timeZone) {
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      });
+      const parts = fmt.formatToParts(date).reduce((acc, p) => {
+        if (p.type !== 'literal') acc[p.type] = p.value;
+        return acc;
+      }, {});
+      return {
+        year: +parts.year,
+        month: +parts.month,
+        day: +parts.day,
+        hour: +parts.hour,
+        minute: +parts.minute,
+        second: +parts.second
+      };
+    }
+
+    // Build a Date representing Y-M-D H:M:S in a given time zone by searching for the UTC instant whose
+    // zoned parts match the desired components. Handles DST transitions.
+    function makeDateInZone({year, month, day, hour = 0, minute = 0, second = 0}, timeZone) {
+      const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+
+      const parts = zonedParts(guess, timeZone);
+      if (parts.year === year && parts.month === month && parts.day === day &&
+          parts.hour === hour && parts.minute === minute && parts.second === second) {
+        return guess;
+      }
+
+      // Binary search +/- 36h to find matching local wall time.
+      let low = guess.getTime() - 36 * 3600_000;
+      let high = guess.getTime() + 36 * 3600_000;
+      for (let i = 0; i < 32; i++) {
+        const mid = new Date((low + high) / 2);
+        const p = zonedParts(mid, timeZone);
+        const keyMid = [p.year, p.month, p.day, p.hour, p.minute, p.second].join(',');
+        const keyWant = [year, month, day, hour, minute, second].join(',');
+        if (keyMid < keyWant) {
+          low = mid.getTime() + 500;
+        } else if (keyMid > keyWant) {
+          high = mid.getTime() - 500;
+        } else {
+          return mid;
+        }
+      }
+      return guess; // fallback
+    }
+
+    // Returns Date for NEXT Friday 3:30 PM CENTRAL (America/Chicago).
+    function nextCentralFriday1530() {
+      const now = new Date();
+      const nowCentral = zonedParts(now, CENTRAL_TZ);
+
+      const weekdayCentral = new Intl.DateTimeFormat('en-US', { timeZone: CENTRAL_TZ, weekday: 'short' })
+        .formatToParts(now)
+        .find(p => p.type === 'weekday').value;
+      const weekdayIndexMap = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+      const w = weekdayIndexMap[weekdayCentral];
+
+      let addDays = (TARGET_WEEKDAY - w + 7) % 7;
+      if (addDays === 0) {
+        if (nowCentral.hour > TARGET_HOUR ||
+          (nowCentral.hour === TARGET_HOUR && nowCentral.minute >= TARGET_MIN)) {
+          addDays = 7;
+        }
+      }
+
+      // Build base day in Central, then set target time.
+      const baseDate = new Date(Date.UTC(nowCentral.year, nowCentral.month - 1, nowCentral.day));
+      const targetBase = new Date(baseDate.getTime() + addDays * 86400_000);
+      const targetCentralParts = zonedParts(targetBase, CENTRAL_TZ);
+      const target = makeDateInZone({
+        year: targetCentralParts.year,
+        month: targetCentralParts.month,
+        day: targetCentralParts.day,
+        hour: TARGET_HOUR,
+        minute: TARGET_MIN,
+        second: 0
+      }, CENTRAL_TZ);
+
+      return target;
+    }
+
+    // Format for local display
+    function formatLocal(dt) {
+      return new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short' }).format(dt);
+    }
+
+    // ----- Countdown logic -----
+    let target = nextCentralFriday1530();
+    let tickTimer = null;
+    let notifyTimerAt = null;
+    let notifyTimerBefore = null;
+
+    function updateNextTargetText() {
+      const localText = formatLocal(target);
+      const centralText = new Intl.DateTimeFormat('en-US', {
+        timeZone: CENTRAL_TZ, dateStyle: 'full', timeStyle: 'short'
+      }).format(target);
+      el.nextText.textContent = `${localText} (↔ ${centralText} in Central)`;
+    }
+
+    function startTicking() {
+      stopTicking();
+      tickTimer = setInterval(tick, 250);
+    }
+
+    function stopTicking() {
+      if (tickTimer) clearInterval(tickTimer);
+      tickTimer = null;
+    }
+
+    function tick() {
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        maybeNotify("It's Dad Joke Time! 🤣", {
+          body: "Saul’s legendary dad joke is dropping now.",
+          tag: 'saul-dad-joke-now'
+        });
+        target = nextCentralFriday1530();
+        updateNextTargetText();
+        scheduleNotifications();
+        return;
+      }
+
+      const totalSeconds = Math.floor(diff / 1000);
+      const days = Math.floor(totalSeconds / (3600 * 24));
+      const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      el.days.textContent = String(days);
+      el.hours.textContent = String(hours).padStart(2, '0');
+      el.minutes.textContent = String(minutes).padStart(2, '0');
+      el.seconds.textContent = String(seconds).padStart(2, '0');
+    }
+
+    // ----- Notifications & SW -----
+    // Create a minimal Service Worker from an in-memory Blob so we can keep this single-file.
+    async function registerInlineSW() {
+      if (!('serviceWorker' in navigator)) return;
+      const swCode = `
+        self.addEventListener('install', (e) => { self.skipWaiting(); });
+        self.addEventListener('activate', (e) => { self.clients.claim(); });
+        self.addEventListener('notificationclick', (event) => {
+          event.notification.close();
+          event.waitUntil((async () => {
+            const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+            if (allClients.length > 0) {
+              const client = allClients[0];
+              client.focus();
+            } else {
+              await self.clients.openWindow('./');
+            }
+          })());
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      try {
+        await navigator.serviceWorker.register(url);
+      } catch (e) {
+        console.warn('Service Worker registration failed:', e);
+      } finally {
+        // Revoke after some time; the browser keeps a copy.
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      }
+    }
+
+    function updateNotifyStatus() {
+      let status = 'Notifications: ';
+      if (!('Notification' in window)) {
+        status += 'not supported in this browser.';
+      } else {
+        status += Notification.permission;
+      }
+      el.notifyStatus.textContent = status;
+    }
+
+    async function requestNotifications() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') {
+        // already granted
+      } else if (Notification.permission !== 'denied') {
+        await Notification.requestPermission();
+      }
+      updateNotifyStatus();
+      scheduleNotifications();
+    }
+
+    function maybeNotify(title, options = {}) {
+      if (!('Notification' in window)) return;
+
+      const show = () => {
+        if (navigator.serviceWorker?.ready) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification?.(title, {
+              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="8" y="44" font-size="40">😂</text></svg>',
+              ...options
+            }).catch(() => {
+              if (Notification.permission === 'granted') {
+                new Notification(title, options);
+              }
+            });
+          });
+        } else if (Notification.permission === 'granted') {
+          new Notification(title, options);
+        }
+      };
+
+      if (Notification.permission === 'granted') {
+        show();
+      }
+    }
+
+    // Schedule notifications while the tab is open.
+    function scheduleNotifications() {
+      if (notifyTimerAt) { clearTimeout(notifyTimerAt); notifyTimerAt = null; }
+      if (notifyTimerBefore) { clearTimeout(notifyTimerBefore); notifyTimerBefore = null; }
+
+      const now = Date.now();
+      const msUntil = target.getTime() - now;
+      const msBefore = msUntil - NOTIFY_MINUTES_BEFORE * 60_000;
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        // Only schedule if the delay fits in setTimeout’s 32-bit window
+        const MAX_DELAY = 2 ** 31 - 1;
+        if (msBefore > 0 && msBefore < MAX_DELAY) {
+          notifyTimerBefore = setTimeout(() => {
+            maybeNotify('Almost Dad Joke time ⏰', {
+              body: `Starts in ${NOTIFY_MINUTES_BEFORE} minute${NOTIFY_MINUTES_BEFORE === 1 ? '' : 's'}.`,
+              tag: 'saul-dad-joke-1m'
+            });
+          }, msBefore);
+        }
+        if (msUntil > 0 && msUntil < MAX_DELAY) {
+          notifyTimerAt = setTimeout(() => {
+            maybeNotify("It's Dad Joke Time! 🤣", {
+              body: 'Saul’s legendary dad joke is dropping now.',
+              tag: 'saul-dad-joke-now'
+            });
+          }, msUntil);
+        }
+      }
+    }
+
+    // ----- Init -----
+    (async function init() {
+      await registerInlineSW();                 // Inline SW for single-file build
+      updateNotifyStatus();
+      el.notifyBtn.addEventListener('click', requestNotifications);
+
+      updateNextTargetText();
+      startTicking();
+      scheduleNotifications();
+
+      // Recompute the target hourly to be robust across DST boundaries.
+      setInterval(() => {
+        const newTarget = nextCentralFriday1530();
+        if (newTarget.getTime() !== target.getTime()) {
+          target = newTarget;
+          updateNextTargetText();
+          scheduleNotifications();
+        }
+      }, 60 * 60 * 1000);
+    })();
+  </script>
+</body>
+</html>
