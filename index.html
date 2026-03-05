@@ -7,7 +7,7 @@
     content="width=device-width, initial-scale=1, shrink-to-fit=no"
   />
   <title>Saul’s Dad Joke Countdown</title>
-  <link rel="icon" hrefdescription" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
+  <link rel<meta name="description" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
   <style>
     :root {
       --bg: #0f172a;
@@ -165,7 +165,7 @@
       notifyStatus: document.getElementById('notifyStatus'),
     };
 
-    // ---- Time zone helpers (no UTC-midnight pitfalls) ----
+    // ---- Time zone helpers ----
     function zonedParts(date, timeZone) {
       const fmt = new Intl.DateTimeFormat('en-US', {
         timeZone,
@@ -187,37 +187,46 @@
     function weekdayInZone(date, timeZone) {
       const wstr = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date);
       const map = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
-      // If some browsers/locales return full names, trim to 3 chars
       const key = (wstr.length > 3 ? wstr.slice(0,3) : wstr);
       return map[key] ?? 0;
     }
 
-    // Produce a UTC Date whose wall time in 'timeZone' matches the given Y-M-D H:M:S
+    // ✅ Patched: robust binary search using zero-padded comparison keys
     function makeDateInZone({year, month, day, hour=0, minute=0, second=0}, timeZone) {
-      // Start with a reasonable guess (treat components as if they were UTC)
+      const p2 = (n) => String(n).padStart(2, '0');
+      const p4 = (n) => String(n).padStart(4, '0');
+      const keyOf = (y, m, d, h, mi, s) => `${p4(y)}-${p2(m)}-${p2(d)} ${p2(h)}:${p2(mi)}:${p2(s)}`;
+
+      // Start with a reasonable guess (treat components as if UTC)
       let guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-      // If already matches, return
+
       const parts = zonedParts(guess, timeZone);
       if (parts.year === year && parts.month === month && parts.day === day &&
           parts.hour === hour && parts.minute === minute && parts.second === second) {
         return guess;
       }
-      // Binary search around the guess to land on the exact wall time (handles DST jumps)
+
       let low = guess.getTime() - 48 * 3600_000;
       let high = guess.getTime() + 48 * 3600_000;
-      const want = [year, month, day, hour, minute, second].join(',');
-      for (let i=0;i<40;i++){
+      const want = keyOf(year, month, day, hour, minute, second);
+
+      for (let i = 0; i < 40; i++) {
         const mid = new Date((low + high) / 2);
         const p = zonedParts(mid, timeZone);
-        const key = [p.year, p.month, p.day, p.hour, p.minute, p.second].join(',');
-        if (key < want) low = mid.getTime() + 250;
-        else if (key > want) high = mid.getTime() - 250;
-        else return mid;
+        const have = keyOf(p.year, p.month, p.day, p.hour, p.minute, p.second);
+
+        if (have < want) {
+          low = mid.getTime() + 250;
+        } else if (have > want) {
+          high = mid.getTime() - 250;
+        } else {
+          return mid; // exact match
+        }
       }
-      return guess;
+      return guess; // fallback (rare)
     }
 
-    // Fixed: compute next Friday 15:30 *entirely in Central wall time*
+    // Compute next Friday 15:30 entirely in Central wall time
     function nextCentralFriday1530() {
       const now = new Date();
       const nowParts = zonedParts(now, CENTRAL_TZ);
@@ -229,10 +238,10 @@
         hour: 0, minute: 0, second: 0
       }, CENTRAL_TZ);
 
-      // Days to this week's (or next week's) Friday
+      // Days to Friday (this week or next)
       let addDays = (TARGET_WEEKDAY - w + 7) % 7;
 
-      // Candidate Friday at 15:30 Central (this week or same day if earlier than 15:30)
+      // Candidate Friday at 15:30 Central
       const candidateDayUTC = new Date(todayCentralMidnight.getTime() + addDays * 86400_000);
       const candDayParts = zonedParts(candidateDayUTC, CENTRAL_TZ);
       let candidate = makeDateInZone({
@@ -240,7 +249,7 @@
         hour: TARGET_HOUR, minute: TARGET_MIN, second: 0
       }, CENTRAL_TZ);
 
-      // If it's already past 15:30 Central on that Friday, move to next week
+      // If already past that time, push one week
       if (candidate.getTime() <= now.getTime()) {
         const nextWeekUTC = new Date(candidateDayUTC.getTime() + 7 * 86400_000);
         const nextParts = zonedParts(nextWeekUTC, CENTRAL_TZ);
@@ -291,7 +300,7 @@
 
     function startTicking() {
       stopTicking();
-      tickTimer = setInterval(tick, 1000); // 1s is enough
+      tickTimer = setInterval(tick, 1000); // 1s tick
     }
     function stopTicking() {
       if (tickTimer) clearInterval(tickTimer);
@@ -432,12 +441,11 @@
       updateNotifyStatus();
       el.notifyBtn.addEventListener('click', requestNotifications);
 
-      // Initial render & timers
       updateNextTargetText();
       startTicking();
       scheduleNotifications();
 
-      // Recompute target hourly (robust over DST boundaries).
+      // Recompute target hourly (robust across DST boundaries).
       setInterval(() => {
         const newTarget = nextCentralFriday1530();
         if (newTarget.getTime() !== target.getTime()) {
