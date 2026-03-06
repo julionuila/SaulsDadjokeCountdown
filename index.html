@@ -7,7 +7,8 @@
     content="width=device-width, initial-scale=1, shrink-to-fit=no"
   />
   <title>Saul’s Dad Joke Countdown</title>
-  <link rel<meta name="description" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
+  data:,
+  <meta name="description" content="Countdown to Saul’s Dad Joke every Friday at 3:30 PM Central." />
   <style>
     :root {
       --bg: #0f172a;
@@ -18,6 +19,8 @@
       --ring: rgba(34, 211, 238, 0.35);
       --success: #34d399;
       --danger: #fb7185;
+      --toast-bg: rgba(17,24,39,0.95);
+      --toast-border: rgba(255,255,255,0.15);
     }
     * { box-sizing: border-box; }
     html, body {
@@ -86,6 +89,42 @@
     .status { color: var(--muted); font-size: 0.95rem; }
     .tz-note { margin-top: 0.5rem; color: var(--muted); }
     footer { text-align: center; color: var(--muted); font-size: 0.9rem; }
+
+    /* FX overlay */
+    #fxCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Toast banner for 45‑minute alert */
+    #toast {
+      position: fixed;
+      top: 16px; left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--toast-bg);
+      color: var(--text);
+      border: 1px solid var(--toast-border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+      opacity: 0;
+      z-index: 1000;
+      transition: transform .25s ease, opacity .25s ease;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    #toast .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #f59e0b; /* amber */
+      box-shadow: 0 0 10px rgba(245,158,11,.8);
+    }
   </style>
 </head>
 <body>
@@ -143,6 +182,10 @@
     </footer>
   </main>
 
+  <!-- FX canvas and toast -->
+  <canvas id="fxCanvas"></canvas>
+  <div id="toast"><span class="dot"></span><strong>45 minutes to Dad Joke time!</strong> Get ready 🎉</div>
+
   <script>
     // === Configuration ===
     const CENTRAL_TZ = 'America/Chicago';
@@ -151,6 +194,7 @@
     const TARGET_MIN = 30;
     const NOTIFY_MINUTES_BEFORE = 1;
     const LIVE_WINDOW_MS = 15_000;
+    const MILESTONE_MINUTES = 45; // <-- 45-minute alert
 
     // DOM
     const el = {
@@ -163,6 +207,8 @@
       stateBadge: document.getElementById('stateBadge'),
       notifyBtn: document.getElementById('notifyBtn'),
       notifyStatus: document.getElementById('notifyStatus'),
+      fxCanvas: document.getElementById('fxCanvas'),
+      toast: document.getElementById('toast'),
     };
 
     // ---- Time zone helpers ----
@@ -183,7 +229,6 @@
       };
     }
 
-    // Return 0..6 (Sun..Sat) for a UTC instant as seen in the given zone
     function weekdayInZone(date, timeZone) {
       const wstr = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date);
       const map = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
@@ -191,57 +236,45 @@
       return map[key] ?? 0;
     }
 
-    // ✅ Patched: robust binary search using zero-padded comparison keys
+    // Patched: robust binary search using zero-padded comparison keys
     function makeDateInZone({year, month, day, hour=0, minute=0, second=0}, timeZone) {
       const p2 = (n) => String(n).padStart(2, '0');
       const p4 = (n) => String(n).padStart(4, '0');
       const keyOf = (y, m, d, h, mi, s) => `${p4(y)}-${p2(m)}-${p2(d)} ${p2(h)}:${p2(mi)}:${p2(s)}`;
 
-      // Start with a reasonable guess (treat components as if UTC)
       let guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-
       const parts = zonedParts(guess, timeZone);
       if (parts.year === year && parts.month === month && parts.day === day &&
           parts.hour === hour && parts.minute === minute && parts.second === second) {
         return guess;
       }
-
       let low = guess.getTime() - 48 * 3600_000;
       let high = guess.getTime() + 48 * 3600_000;
       const want = keyOf(year, month, day, hour, minute, second);
-
       for (let i = 0; i < 40; i++) {
         const mid = new Date((low + high) / 2);
         const p = zonedParts(mid, timeZone);
         const have = keyOf(p.year, p.month, p.day, p.hour, p.minute, p.second);
-
-        if (have < want) {
-          low = mid.getTime() + 250;
-        } else if (have > want) {
-          high = mid.getTime() - 250;
-        } else {
-          return mid; // exact match
-        }
+        if (have < want) low = mid.getTime() + 250;
+        else if (have > want) high = mid.getTime() - 250;
+        else return mid;
       }
-      return guess; // fallback (rare)
+      return guess;
     }
 
-    // Compute next Friday 15:30 entirely in Central wall time
     function nextCentralFriday1530() {
       const now = new Date();
       const nowParts = zonedParts(now, CENTRAL_TZ);
       const w = weekdayInZone(now, CENTRAL_TZ);
 
-      // Central "today" at 00:00 as a UTC instant
+      // Central midnight today as a UTC instant
       const todayCentralMidnight = makeDateInZone({
         year: nowParts.year, month: nowParts.month, day: nowParts.day,
         hour: 0, minute: 0, second: 0
       }, CENTRAL_TZ);
 
-      // Days to Friday (this week or next)
       let addDays = (TARGET_WEEKDAY - w + 7) % 7;
 
-      // Candidate Friday at 15:30 Central
       const candidateDayUTC = new Date(todayCentralMidnight.getTime() + addDays * 86400_000);
       const candDayParts = zonedParts(candidateDayUTC, CENTRAL_TZ);
       let candidate = makeDateInZone({
@@ -249,7 +282,6 @@
         hour: TARGET_HOUR, minute: TARGET_MIN, second: 0
       }, CENTRAL_TZ);
 
-      // If already past that time, push one week
       if (candidate.getTime() <= now.getTime()) {
         const nextWeekUTC = new Date(candidateDayUTC.getTime() + 7 * 86400_000);
         const nextParts = zonedParts(nextWeekUTC, CENTRAL_TZ);
@@ -258,7 +290,6 @@
           hour: TARGET_HOUR, minute: TARGET_MIN, second: 0
         }, CENTRAL_TZ);
       }
-
       return candidate;
     }
 
@@ -272,6 +303,10 @@
     let liveClearTimer = null;
     let notifyTimerAt = null;
     let notifyTimerBefore = null;
+
+    // 45-minute milestone
+    let milestoneTimer = null;
+    let milestoneFired = false;
 
     function setBadge(mode) {
       el.stateBadge.classList.remove('next', 'live', 'warn');
@@ -300,7 +335,7 @@
 
     function startTicking() {
       stopTicking();
-      tickTimer = setInterval(tick, 1000); // 1s tick
+      tickTimer = setInterval(tick, 1000);
     }
     function stopTicking() {
       if (tickTimer) clearInterval(tickTimer);
@@ -324,9 +359,11 @@
         if (!liveClearTimer) {
           liveClearTimer = setTimeout(() => {
             liveClearTimer = null;
+            milestoneFired = false; // reset for next week
             target = nextCentralFriday1530();
             updateNextTargetText();
             scheduleNotifications();
+            scheduleMilestone();
           }, Math.max(2500, LIVE_WINDOW_MS));
         }
 
@@ -349,7 +386,7 @@
       el.seconds.textContent = String(seconds).padStart(2, '0');
     }
 
-    // ---- Notifications + inline SW (still static) ----
+    // ---- Notifications + inline SW ----
     async function registerInlineSW() {
       if (!('serviceWorker' in navigator)) return;
       const swCode = `
@@ -385,6 +422,7 @@
       }
       updateNotifyStatus();
       scheduleNotifications();
+      scheduleMilestone(); // in case timing fits
     }
 
     function maybeNotify(title, options = {}) {
@@ -435,6 +473,180 @@
       }
     }
 
+    // ---- 45-minute milestone: toast + confetti + fireworks (+ optional notification) ----
+    function scheduleMilestone() {
+      if (milestoneTimer) { clearTimeout(milestoneTimer); milestoneTimer = null; }
+      milestoneFired = false;
+
+      const now = Date.now();
+      const msUntil = target.getTime() - now;
+      const msAt = msUntil - MILESTONE_MINUTES * 60_000;
+      const MAX_DELAY = 2 ** 31 - 1;
+
+      if (msAt > 0 && msAt < MAX_DELAY) {
+        milestoneTimer = setTimeout(triggerMilestone, msAt);
+      } else if (msUntil > 0 && msAt <= 0) {
+        // If already within the 45-minute window when page loads, fire now once
+        setTimeout(triggerMilestone, 250);
+      }
+    }
+
+    function triggerMilestone() {
+      if (milestoneFired) return;
+      milestoneFired = true;
+
+      showToast('45 minutes to Dad Joke time! 🎉');
+      maybeNotify('45 minutes to Dad Joke! 🎉', {
+        body: 'Confetti and fireworks to celebrate the countdown.',
+        tag: 'saul-dad-joke-45m'
+      });
+      runConfettiAndFireworks(10_000); // 10s of effects
+    }
+
+    function showToast(text) {
+      el.toast.querySelector('strong').textContent = text;
+      el.toast.classList.add('show');
+      setTimeout(() => el.toast.classList.remove('show'), 4500);
+    }
+
+    // ---- Visual FX: Confetti + Fireworks (canvas, no deps) ----
+    function runConfettiAndFireworks(durationMs = 8000) {
+      const canvas = el.fxCanvas;
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      function resize() {
+        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.height = Math.floor(window.innerHeight * dpr);
+      }
+      resize();
+      const onResize = () => resize();
+      window.addEventListener('resize', onResize);
+
+      const colors = ['#22d3ee','#a78bfa','#f472b6','#f59e0b','#34d399','#60a5fa','#ef4444'];
+      const rand = (min,max) => Math.random()*(max-min)+min;
+
+      // Confetti particles
+      const confetti = Array.from({length: 220}).map(() => ({
+        x: rand(0, canvas.width), y: rand(-canvas.height*0.5, -20),
+        w: rand(6*dpr, 12*dpr), h: rand(10*dpr, 18*dpr),
+        vx: rand(-0.6, 0.6)*dpr, vy: rand(1.2, 2.2)*dpr,
+        rot: rand(0, Math.PI*2), vr: rand(-0.15, 0.15),
+        color: colors[Math.floor(rand(0, colors.length))],
+        tilt: rand(-0.6, 0.6),
+      }));
+
+      // Firework bursts (pre-scheduled)
+      const bursts = [];
+      function spawnBurst() {
+        const cx = rand(canvas.width*0.15, canvas.width*0.85);
+        const cy = rand(canvas.height*0.25, canvas.height*0.55);
+        const count = Math.floor(rand(40, 80));
+        const p = [];
+        for (let i=0;i<count;i++){
+          const angle = rand(0, Math.PI*2);
+          const speed = rand(1.3, 3.3)*dpr;
+          p.push({
+            x: cx, y: cy,
+            vx: Math.cos(angle)*speed,
+            vy: Math.sin(angle)*speed,
+            life: rand(700, 1200),
+            age: 0,
+            color: colors[Math.floor(rand(0, colors.length))]
+          });
+        }
+        bursts.push({particles: p});
+      }
+
+      // Schedule several bursts over the duration
+      const start = performance.now();
+      const burstSchedule = [300, 1200, 2100, 3300, 4700, 6200, 7800];
+      let nextBurstIdx = 0;
+
+      let rafId = 0;
+      function tick(nowTs) {
+        const t = nowTs - start;
+
+        // schedule bursts
+        while (nextBurstIdx < burstSchedule.length && t >= burstSchedule[nextBurstIdx]) {
+          spawnBurst();
+          nextBurstIdx++;
+        }
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        // draw confetti
+        for (const c of confetti) {
+          c.vy += 0.01*dpr; // gentle gravity
+          c.x += c.vx + Math.sin((t/600)+c.tilt)*0.3*dpr;
+          c.y += c.vy;
+          c.rot += c.vr;
+
+          // recycle if off bottom
+          if (c.y - c.h > canvas.height) {
+            c.x = rand(0, canvas.width);
+            c.y = rand(-canvas.height*0.3, -20);
+            c.vx = rand(-0.6, 0.6)*dpr;
+            c.vy = rand(1.2, 2.2)*dpr;
+          }
+
+          ctx.save();
+          ctx.translate(c.x, c.y);
+          ctx.rotate(c.rot);
+          ctx.fillStyle = c.color;
+          ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h);
+          ctx.restore();
+        }
+
+        // draw fireworks particles
+        for (const b of bursts) {
+          for (const p of b.particles) {
+            p.age += 16;
+            // drag + gravity
+            p.vx *= 0.99; p.vy = p.vy*0.99 + 0.015*dpr;
+            p.x += p.vx; p.y += p.vy;
+
+            const alpha = Math.max(0, 1 - p.age / p.life);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2.2*dpr, 0, Math.PI*2);
+            ctx.fillStyle = hexToRgba(p.color, alpha);
+            ctx.fill();
+          }
+          // prune dead
+          b.particles = b.particles.filter(p => p.age < p.life);
+        }
+
+        if (t < durationMs) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          // fade last few frames then stop
+          if (bursts.some(b => b.particles.length)) {
+            rafId = requestAnimationFrame(tick);
+          } else {
+            cleanup();
+          }
+        }
+      }
+
+      function hexToRgba(hex, a=1) {
+        const v = hex.replace('#','');
+        const r = parseInt(v.substring(0,2),16);
+        const g = parseInt(v.substring(2,4),16);
+        const b = parseInt(v.substring(4,6),16);
+        return `rgba(${r},${g},${b},${a})`;
+      }
+
+      function cleanup() {
+        cancelAnimationFrame(rafId);
+        window.removeEventListener('resize', onResize);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+      }
+
+      // kick off
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    }
+
     // ---- Init ----
     (async function init() {
       await registerInlineSW();
@@ -444,14 +656,17 @@
       updateNextTargetText();
       startTicking();
       scheduleNotifications();
+      scheduleMilestone(); // <-- schedule the 45-min alert
 
-      // Recompute target hourly (robust across DST boundaries).
+      // Recompute target hourly (robust across DST).
       setInterval(() => {
         const newTarget = nextCentralFriday1530();
         if (newTarget.getTime() !== target.getTime()) {
           target = newTarget;
+          milestoneFired = false;
           updateNextTargetText();
           scheduleNotifications();
+          scheduleMilestone();
         }
       }, 60 * 60 * 1000);
     })();
